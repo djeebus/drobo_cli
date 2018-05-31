@@ -132,6 +132,7 @@ class DroboStatus(enum.Enum):
     BadDrive = 0x8010
     DriveRemoved = 0x8046
     DataProtectionInProgress = 0x8240
+    DataProtectionInProgress2 = 0x8244
     OKUnknown = 0x18000
     RedFull = 0x18006
     DataProtectionFull = 0x18240
