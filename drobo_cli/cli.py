@@ -15,30 +15,41 @@ def cli(ctx, host):
     }
 
 
+def parse_status(number):
+    number = number.pyval
+
+    is_full = (number & 0x10000 == 0x10000)
+    number &= ~0x10000
+
+    return to_enum(number, DroboStatus), is_full
+
+
 @cli.command()
 @click.pass_context
 def status(ctx):
     client = StatusClient(ctx.obj['host'])
-    status = client.get_status()
+    msg = client.get_status()
 
-    total_cap_protected = to_size(status.mTotalCapacityProtected)
-    used_cap_protected = to_size(status.mUsedCapacityProtected)
+    total_cap_protected = to_size(msg.mTotalCapacityProtected)
+    used_cap_protected = to_size(msg.mUsedCapacityProtected)
 
-    print(f'status: {to_enum(status.mStatus, DroboStatus).name}')
-    print(f'ESA ID: {status.mESAID.pyval}')
-    print(f'has apps: {status.DroboApps.DNASDroboAppsEnabled.pyval == 1}')
-    print(f'disk pack status: {status.mDiskPackStatus.pyval}')
-    print(f'drobo model: {status.mModel.pyval}')
-    print(f'drobo name: {status.mDroboName.pyval}')
-    print(f'drobo version: {status.mVersion.pyval}')
+    overall, is_full = parse_status(msg.mStatus)
+    print(f'status: {overall.name}')
+    print(f'is full: {is_full}')
+    print(f'ESA ID: {msg.mESAID.pyval}')
+    print(f'has apps: {msg.DroboApps.DNASDroboAppsEnabled.pyval == 1}')
+    print(f'disk pack status: {msg.mDiskPackStatus.pyval}')
+    print(f'drobo model: {msg.mModel.pyval}')
+    print(f'drobo name: {msg.mDroboName.pyval}')
+    print(f'drobo version: {msg.mVersion.pyval}')
     print(f'protected capacity: {used_cap_protected}/{total_cap_protected}')
 
     table = prettytable.PrettyTable(
         ['#', 'Status', 'Errors', 'Type', 'Make', 'Firmware', 'Serial', 'Size'],
     )
 
-    for index in range(status.mSlotCountExp.pyval):
-        disk_info = getattr(status.mSlotsExp, f'n{index}')
+    for index in range(msg.mSlotCountExp.pyval):
+        disk_info = getattr(msg.mSlotsExp, f'n{index}')
         disk_type = to_enum(disk_info.mDiskType, DiskType)
 
         table.add_row([
@@ -121,7 +132,8 @@ MTU Size: {mtu_size}
 
 
 def to_enum(value, enum_cls):
-    value = value.pyval
+    if not isinstance(value, int):
+        value = value.pyval
     return enum_cls(value)
 
 
@@ -131,11 +143,9 @@ class DroboStatus(enum.Enum):
     Red = 0x8006
     BadDrive = 0x8010
     DriveRemoved = 0x8046
+    Unknown = 0x8052
     DataProtectionInProgress = 0x8240
     DataProtectionInProgress2 = 0x8244
-    OKUnknown = 0x18000
-    RedFull = 0x18006
-    DataProtectionFull = 0x18240
 
 
 class DiskStatus(enum.Enum):

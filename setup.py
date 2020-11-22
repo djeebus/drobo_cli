@@ -14,9 +14,9 @@ def get_reqs(fname):
 
 
 setup(
-    name='gmusic-cli',
+    name='drobo-cli',
     version='0.0.1',
-    description='GMusic CLI',
+    description='drobo CLI',
     entry_points={
         'console_scripts': [
             'drobo-cli = drobo_cli.cli:cli',
